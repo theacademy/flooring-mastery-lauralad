@@ -20,8 +20,7 @@ class FlooringServiceImplTest {
     public FlooringServiceImplTest() {
         ApplicationContext ctx =
                 new ClassPathXmlApplicationContext("applicationContext.xml");
-        service =
-                ctx.getBean("serviceLayer", FlooringService.class);
+        service = ctx.getBean("serviceLayer", FlooringService.class);
     }
 
     @Test
