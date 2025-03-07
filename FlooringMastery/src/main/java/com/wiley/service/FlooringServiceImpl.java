@@ -98,6 +98,10 @@ public class FlooringServiceImpl implements FlooringService{
         return orderDao.updateOrder(order.getOrderNumber(), date, order);
     }
 
+    @Override
+    public void exportAllData() throws OrderDataPersistenceException {
+        orderDao.exportAll();
+    }
 
     @Override
     public boolean validateDateInformation(LocalDate date) throws OrderInformationInvalidException {

@@ -27,6 +27,8 @@ public class FlooringController {
     public void run(){
         boolean keepGoing = true;
         int menuSelection = 0;
+        //initialize the maxId with pre-existing files
+        initializeService();
 
         while (keepGoing){
             try {
@@ -64,14 +66,13 @@ public class FlooringController {
     private int menuSelection(){
         return view.menuSelection();
     }
+    private void initializeService() {service.init();}
     private void displayOrders() throws OrderDataPersistenceException {
         view.displayOrdersBanner();
         LocalDate date = view.askDate();
         List<Order> orders = service.getAllOrdersForDate(date);
         view.displayOrders(orders);
     }
-
-
     private void addOrder() throws OrderDataPersistenceException {
         //add order banner
         view.askOrderBanner();
@@ -149,7 +150,6 @@ public class FlooringController {
         }while (hasErrors);
         return newName;
     }
-
     private String addOrderAskState(Set<String> states) throws OrderDataPersistenceException {
         //ask user for state until it's valid
         boolean hasErrors = false;
@@ -175,7 +175,6 @@ public class FlooringController {
 
         return newState;
     }
-
     private String addOrderAskProduct() throws OrderDataPersistenceException {
         //ask user for product until it's valid
         List<String> productTypes = service.getAllProductTypes();
@@ -190,7 +189,6 @@ public class FlooringController {
 
         return newProductType;
     }
-
     private BigDecimal addOrderAskArea(){
         //ask user for area until it's valid
         String newArea;
@@ -415,8 +413,10 @@ public class FlooringController {
             }
         }
     }
-    private void exportAllData(){
-        throw new UnsupportedOperationException("not yet implemented!");
+    private void exportAllData() throws OrderDataPersistenceException {
+        view.exportAllDataBanner();
+        service.exportAllData();
+        view.exportAllDataSuccessBanner();
     }
     private void unknownCommand(){
         view.displayUnknownCommandBanner();

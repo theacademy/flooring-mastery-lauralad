@@ -110,6 +110,11 @@ public interface FlooringService {
      * @throws OrderDataPersistenceException if the order is not found
      */
     Order getOrder(int orderNumber, LocalDate date) throws OrderDataPersistenceException;
+    /**
+     * Exports all order data across all dates into a single file or external system.
+     * Useful for backups or generating comprehensive reports.
+     */
+    void exportAllData() throws OrderDataPersistenceException;
 
     //VALIDATION
     /**

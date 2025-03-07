@@ -253,6 +253,10 @@ public class FlooringView {
         io.print("=== EXPORT ALL DATA ===");
     }
 
+    public void exportAllDataSuccessBanner() {
+        io.print("Backup saved successfully.");
+    }
+
     public void displayOrder(Order order){
         io.print(formatOrderInfo(order));
     }

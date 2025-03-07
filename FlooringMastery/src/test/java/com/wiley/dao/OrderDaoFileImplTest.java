@@ -1,9 +1,12 @@
 package com.wiley.dao;
 
 import com.wiley.model.Order;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
@@ -18,17 +21,21 @@ import static org.junit.jupiter.api.Assertions.*;
 class OrderDaoFileImplTest {
 
     OrderDao testOrderDao;
-    private final String TEST_ORDER_FOLDER = "src/test/TestFileData/Orders";
-    private final String TEST_EXPORT_FOLDER = "src/test/TestFileData/Backup";
+    private static final String TEST_FOLDER = "src/test/TestFileData";
+    private static final String TEST_ORDER_FOLDER = "src/test/TestFileData/Orders";
+    private static final String TEST_EXPORT_FOLDER = "src/test/TestFileData/Backup";
     public OrderDaoFileImplTest() {
+    }
+
+    @BeforeAll
+    static void setUpBeforeAll() throws Exception {
+        //create test directories
+        Files.createDirectories(Paths.get(TEST_ORDER_FOLDER));
+        Files.createDirectories(Paths.get(TEST_EXPORT_FOLDER));
     }
 
     @BeforeEach
     void setUp() throws Exception {
-        //ensure test directories exist
-        Files.createDirectories(Paths.get(TEST_ORDER_FOLDER));
-        Files.createDirectories(Paths.get(TEST_EXPORT_FOLDER));
-
         testOrderDao = new OrderDaoFileImpl(TEST_ORDER_FOLDER, TEST_EXPORT_FOLDER);
 
         //create sample file
@@ -42,9 +49,23 @@ class OrderDaoFileImplTest {
             //add sample order
             writer.println("1,Ada Lovelace,CA,25.00,Tile,249.00,3.50,4.15,871.50,1033.35,476.21,2381.06");
             writer.flush();
-
         }
+    }
 
+    @AfterAll
+    static void cleanUpAfterAll() throws Exception {
+        // Delete all files and directories after tests
+        deleteDirectory(new File(TEST_ORDER_FOLDER));
+        deleteDirectory(new File(TEST_EXPORT_FOLDER));
+        deleteDirectory(new File(TEST_FOLDER));
+    }
+    private static void deleteDirectory(File directory) throws Exception {
+        if (directory.exists()) {
+            for (File file : directory.listFiles()) {
+                file.delete();
+            }
+            directory.delete();
+        }
     }
 
     @Test
@@ -130,6 +151,33 @@ class OrderDaoFileImplTest {
     void testGetMaxOrderNumber() throws Exception {
         int maxOrder = testOrderDao.getMaxOrderNumber();
         assertTrue(maxOrder == 1, "Ada is #1");
+    }
+
+    @Test
+    void testExportAll() throws Exception {
+        //Arrange
+        LocalDate date = LocalDate.now().plusDays(1);
+        String backupFileName = "Backup_" + LocalDate.now().format(DateTimeFormatter.ofPattern("MMddyyyy")) + ".txt";
+        String backupFilePath = TEST_EXPORT_FOLDER + "/" + backupFileName;
+
+        //ensure the backup file does not exist before running the test
+        Files.deleteIfExists(Paths.get(backupFilePath));
+
+        //Act
+        testOrderDao.exportAll();
+
+        //Assert
+        assertTrue(Files.exists(Paths.get(backupFilePath)), "Backup file should be created");
+
+        //read the contents of the backup file, using Files method to do it faster
+        List<String> lines = Files.readAllLines(Paths.get(backupFilePath));
+        assertFalse(lines.isEmpty(), "Backup file should not be empty");
+
+        //is header is correct
+        assertEquals("OrderNumber,CustomerName,State,TaxRate,ProductType,Area,CostPerSquareFoot,LaborCostPerSquareFoot,MaterialCost,LaborCost,Tax,Total,Date", lines.get(0), "Header should match expected format");
+
+        //the exported order exists in the file?
+        assertTrue(lines.stream().anyMatch(line -> line.contains("Ada Lovelace")), "Exported file should contain Ada's order");
     }
 
 

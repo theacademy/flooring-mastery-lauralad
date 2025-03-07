@@ -102,7 +102,7 @@ public class OrderDaoFileImpl implements OrderDao{
         return orderFromFile;
     }
 
-    private String marshallOrder(Order anOrder){
+    private String marshallOrder(Order anOrder, boolean hasDate){
         //file format:
         //OrderNumber,
         // CustomerName,
@@ -127,12 +127,17 @@ public class OrderDaoFileImpl implements OrderDao{
         orderAsText += anOrder.getMaterialCost() + DELIMITER;
         orderAsText += anOrder.getLaborCost() + DELIMITER;
         orderAsText += anOrder.getTax() + DELIMITER;
-        orderAsText += anOrder.getTotal();
+        if (hasDate) {
+            orderAsText += anOrder.getTotal() + DELIMITER;
+            orderAsText += anOrder.getDate();
+        } else {
+            orderAsText += anOrder.getTotal();
+        }
+
 
         return orderAsText;
 
     }
-
 
     private void save(LocalDate date, HashMap<Integer, Order> orderMap) throws OrderDataPersistenceException {
         String orderFilePath = "Orders_" + date.format(FORMATTER) + ".txt";
@@ -152,7 +157,7 @@ public class OrderDaoFileImpl implements OrderDao{
         out.println("OrderNumber,CustomerName,State,TaxRate,ProductType,Area,CostPerSquareFoot,LaborCostPerSquareFoot,MaterialCost,LaborCost,Tax,Total");
         for (Order currentOrder: orderMap.values()) {
             // turn a order into a String
-            orderAsText = this.marshallOrder(currentOrder);
+            orderAsText = this.marshallOrder(currentOrder, false);
             // write the order object to the file
             out.println(orderAsText);
             // force to write line to file
@@ -219,12 +224,71 @@ public class OrderDaoFileImpl implements OrderDao{
     }
 
     @Override
-    public void exportAll() {
+    public void exportAll() throws OrderDataPersistenceException {
         //iterate through all the files in the folder path
         //load data for each
         //export this to export folder path
-        throw new UnsupportedOperationException("not yet done");
+
+        File orderFolder = new File(ORDER_FOLDER_PATH);
+        if (!orderFolder.exists() || !orderFolder.isDirectory()) {
+            throw new OrderDataPersistenceException("Could not load order files.");
+        }
+
+        HashMap<Integer, Order> allOrders = new HashMap<>();
+
+        //just making we only retrieve the Order files, although there should not be anything else there
+        File[] files = orderFolder.listFiles(
+                (dir, name) -> name.startsWith("Orders_") && name.endsWith(".txt")
+        );
+        if (files != null) {
+            for (File file : files) {
+                String filename = file.getName();
+                // retrieve the date so we can add it
+                String dateString = filename.substring(7, 15);
+                LocalDate date = LocalDate.parse(dateString, FORMATTER);
+
+                // now save all these orders in the hashmap once we call the load method to handle it for us
+                allOrders.putAll(load(date));
+            }
+        }
+        // then save all the orders into a separate file in the export folder
+        saveExportFile(allOrders);
     }
+
+    private void saveExportFile(HashMap<Integer, Order> orders) throws OrderDataPersistenceException {
+        File exportFolder = new File(EXPORT_FOLDER_PATH);
+        if (!exportFolder.exists()) {
+            exportFolder.mkdirs();
+        }
+
+        //saving it as Backup_<date of the backup request>
+        String exportFileName = "Backup_" + LocalDate.now().format(FORMATTER) + ".txt";
+        File exportFile = new File(exportFolder, exportFileName);
+
+        PrintWriter out;
+        try {
+            out = new PrintWriter(new FileWriter(exportFile));
+        } catch (IOException e){
+            throw new OrderDataPersistenceException("Could not save order data to file.", e);
+
+        }
+
+        //write header file
+        out.println("OrderNumber,CustomerName,State,TaxRate,ProductType,Area,CostPerSquareFoot,LaborCostPerSquareFoot,MaterialCost,LaborCost,Tax,Total,Date");
+        String orderAsText;
+
+        //write the content
+        for (Order order : orders.values()) {
+            orderAsText = this.marshallOrder(order, true);
+            // write the order object to the file
+            out.println(orderAsText);
+            // force to write line to file
+            out.flush();
+        }
+        out.close();
+
+    }
+
 
     public int getMaxOrderNumber() throws OrderDataPersistenceException {
         File orderFolder = new File(ORDER_FOLDER_PATH);

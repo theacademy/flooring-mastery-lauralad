@@ -56,7 +56,7 @@ public interface OrderDao {
      * Exports all order data across all dates into a single file or external system.
      * Useful for backups or generating comprehensive reports.
      */
-    void exportAll();
+    void exportAll() throws OrderDataPersistenceException;
     /**
      * Retrieves the maximum order number in the system.
      *
